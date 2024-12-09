@@ -1,4 +1,6 @@
-package com.example.diabetes_predictor.model;
+package com.example.diabetes_predictor;
+
+import java.lang.reflect.Field;
 
 public class DiabetesRecord {
     private double diabetesBinary;
@@ -24,186 +26,83 @@ public class DiabetesRecord {
     private double education;
     private double income;
 
-    // Constructor
-    public DiabetesRecord() {
-    }
+    public double getDiabetesBinary() { return diabetesBinary; }
+    public void setDiabetesBinary(double diabetesBinary) { this.diabetesBinary = diabetesBinary; }
 
-    // Getters and Setters
+    public double getHighBP() { return highBP; }
+    public void setHighBP(double highBP) { this.highBP = highBP; }
 
-    public double getDiabetesBinary() {
-        return diabetesBinary;
-    }
+    public double getHighChol() { return highChol; }
+    public void setHighChol(double highChol) { this.highChol = highChol; }
 
-    public void setDiabetesBinary(double diabetesBinary) {
-        this.diabetesBinary = diabetesBinary;
-    }
+    public double getCholCheck() { return cholCheck; }
+    public void setCholCheck(double cholCheck) { this.cholCheck = cholCheck; }
 
-    public double getHighBP() {
-        return highBP;
-    }
+    public double getBmi() { return bmi; }
+    public void setBmi(double bmi) { this.bmi = bmi; }
 
-    public void setHighBP(double highBP) {
-        this.highBP = highBP;
-    }
+    public double getSmoker() { return smoker; }
+    public void setSmoker(double smoker) { this.smoker = smoker; }
 
-    public double getHighChol() {
-        return highChol;
-    }
+    public double getStroke() { return stroke; }
+    public void setStroke(double stroke) { this.stroke = stroke; }
 
-    public void setHighChol(double highChol) {
-        this.highChol = highChol;
-    }
+    public double getHeartDiseaseOrAttack() { return heartDiseaseOrAttack; }
+    public void setHeartDiseaseOrAttack(double heartDiseaseOrAttack) { this.heartDiseaseOrAttack = heartDiseaseOrAttack; }
 
-    public double getCholCheck() {
-        return cholCheck;
-    }
+    public double getPhysActivity() { return physActivity; }
+    public void setPhysActivity(double physActivity) { this.physActivity = physActivity; }
 
-    public void setCholCheck(double cholCheck) {
-        this.cholCheck = cholCheck;
-    }
+    public double getFruits() { return fruits; }
+    public void setFruits(double fruits) { this.fruits = fruits; }
 
-    public double getBmi() {
-        return bmi;
-    }
+    public double getVeggies() { return veggies; }
+    public void setVeggies(double veggies) { this.veggies = veggies; }
 
-    public void setBmi(double bmi) {
-        this.bmi = bmi;
-    }
+    public double getHvyAlcoholConsump() { return hvyAlcoholConsump; }
+    public void setHvyAlcoholConsump(double hvyAlcoholConsump) { this.hvyAlcoholConsump = hvyAlcoholConsump; }
 
-    public double getSmoker() {
-        return smoker;
-    }
+    public double getAnyHealthcare() { return anyHealthcare; }
+    public void setAnyHealthcare(double anyHealthcare) { this.anyHealthcare = anyHealthcare; }
 
-    public void setSmoker(double smoker) {
-        this.smoker = smoker;
-    }
+    public double getNoDocbcCost() { return noDocbcCost; }
+    public void setNoDocbcCost(double noDocbcCost) { this.noDocbcCost = noDocbcCost; }
 
-    public double getStroke() {
-        return stroke;
-    }
+    public double getGenHlth() { return genHlth; }
+    public void setGenHlth(double genHlth) { this.genHlth = genHlth; }
 
-    public void setStroke(double stroke) {
-        this.stroke = stroke;
-    }
+    public double getMentHlth() { return mentHlth; }
+    public void setMentHlth(double mentHlth) { this.mentHlth = mentHlth; }
 
-    public double getHeartDiseaseOrAttack() {
-        return heartDiseaseOrAttack;
-    }
+    public double getPhysHlth() { return physHlth; }
+    public void setPhysHlth(double physHlth) { this.physHlth = physHlth; }
 
-    public void setHeartDiseaseOrAttack(double heartDiseaseOrAttack) {
-        this.heartDiseaseOrAttack = heartDiseaseOrAttack;
-    }
+    public double getDiffWalk() { return diffWalk; }
+    public void setDiffWalk(double diffWalk) { this.diffWalk = diffWalk; }
 
-    public double getPhysActivity() {
-        return physActivity;
-    }
+    public double getSex() { return sex; }
+    public void setSex(double sex) { this.sex = sex; }
 
-    public void setPhysActivity(double physActivity) {
-        this.physActivity = physActivity;
-    }
+    public double getAge() { return age; }
+    public void setAge(double age) { this.age = age; }
 
-    public double getFruits() {
-        return fruits;
-    }
+    public double getEducation() { return education; }
+    public void setEducation(double education) { this.education = education; }
 
-    public void setFruits(double fruits) {
-        this.fruits = fruits;
-    }
+    public double getIncome() { return income; }
+    public void setIncome(double income) { this.income = income; }
 
-    public double getVeggies() {
-        return veggies;
-    }
-
-    public void setVeggies(double veggies) {
-        this.veggies = veggies;
-    }
-
-    public double getHvyAlcoholConsump() {
-        return hvyAlcoholConsump;
-    }
-
-    public void setHvyAlcoholConsump(double hvyAlcoholConsump) {
-        this.hvyAlcoholConsump = hvyAlcoholConsump;
-    }
-
-    public double getAnyHealthcare() {
-        return anyHealthcare;
-    }
-
-    public void setAnyHealthcare(double anyHealthcare) {
-        this.anyHealthcare = anyHealthcare;
-    }
-
-    public double getNoDocbcCost() {
-        return noDocbcCost;
-    }
-
-    public void setNoDocbcCost(double noDocbcCost) {
-        this.noDocbcCost = noDocbcCost;
-    }
-
-    public double getGenHlth() {
-        return genHlth;
-    }
-
-    public void setGenHlth(double genHlth) {
-        this.genHlth = genHlth;
-    }
-
-    public double getMentHlth() {
-        return mentHlth;
-    }
-
-    public void setMentHlth(double mentHlth) {
-        this.mentHlth = mentHlth;
-    }
-
-    public double getPhysHlth() {
-        return physHlth;
-    }
-
-    public void setPhysHlth(double physHlth) {
-        this.physHlth = physHlth;
-    }
-
-    public double getDiffWalk() {
-        return diffWalk;
-    }
-
-    public void setDiffWalk(double diffWalk) {
-        this.diffWalk = diffWalk;
-    }
-
-    public double getSex() {
-        return sex;
-    }
-
-    public void setSex(double sex) {
-        this.sex = sex;
-    }
-
-    public double getAge() {
-        return age;
-    }
-
-    public void setAge(double age) {
-        this.age = age;
-    }
-
-    public double getEducation() {
-        return education;
-    }
-
-    public void setEducation(double education) {
-        this.education = education;
-    }
-
-    public double getIncome() {
-        return income;
-    }
-
-    public void setIncome(double income) {
-        this.income = income;
+    public Object getFieldValue(String fieldName){
+        try {
+            Field field = this.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(this);
+        } catch (NoSuchFieldException e) {
+            System.out.println("Error: Field '" + fieldName + "' not found.");
+        } catch (IllegalAccessException e) {
+            System.out.println("Error: Unable to access field '" + fieldName + "'.");
+        }
+        return null;
     }
 
     @Override
