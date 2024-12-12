@@ -1,97 +1,111 @@
 package com.example.diabetes_predictor;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.*;
 
 @Service
 public class RandomForest {
-    private static final String FILE_PATH = "Data/Diabetes_Dataset.csv";
-    private ArrayList<DiabetesRecord> dataset = new ArrayList<>();
-    public static final String[] FIELD_NAMES = {
-            "diabetesBinary",
-            "highBP",
-            "highChol",
-            "cholCheck",
-            "bmi",
-            "smoker",
-            "stroke",
-            "heartDiseaseOrAttack",
-            "physActivity",
-            "fruits",
-            "veggies",
-            "hvyAlcoholConsump",
-            "anyHealthcare",
-            "noDocbcCost",
-            "genHlth",
-            "mentHlth",
-            "physHlth",
-            "diffWalk",
-            "sex",
-            "age",
-            "education",
-            "income"
-    };
-
+    private static final String DEFAULT_FILE_PATH = "Data/s.csv";
+    private List<GenericRecord> dataset = new ArrayList<>();
     private List<DecisionTree> forest = new ArrayList<>();
     private int numTrees = 10; // number of trees in the forest
+    private String labelName; // Not strictly used here, but we store for clarity
+    private String[] featureNames; // Dynamic features from the CSV
 
+    /**
+     * Trains the model using the default dataset.
+     * For general-purpose use, call loadAndTrain with your own file path.
+     */
     public boolean practiceOutput() {
-        try (Reader fileReader = new InputStreamReader(new ClassPathResource(FILE_PATH).getInputStream());
+        return loadAndTrain(DEFAULT_FILE_PATH);
+    }
+
+    /**
+     * Load a dataset from a given CSV file path, train a RandomForest model,
+     * and evaluate it. This method is general purpose.
+     * It expects:
+     *   - The first row is a header row.
+     *   - The first column in the header is the label column name.
+     *   - The remaining columns are features.
+     * Data that can't be parsed to doubles is skipped.
+     */
+    public boolean loadAndTrain(String filePath) {
+        try (Reader fileReader = new InputStreamReader(new ClassPathResource(filePath).getInputStream());
              CSVReader csvReader = new CSVReader(fileReader)) {
 
             List<String[]> data = csvReader.readAll();
-            // data.remove(0); // if there's a header
-            for (String[] row : data) {
-                if (row.length != 22) {
-                    continue;
-                }
-                DiabetesRecord record = new DiabetesRecord();
-                try {
-                    record.setDiabetesBinary(Double.parseDouble(row[0]));
-                    record.setHighBP(Double.parseDouble(row[1]));
-                    record.setHighChol(Double.parseDouble(row[2]));
-                    record.setCholCheck(Double.parseDouble(row[3]));
-                    record.setBmi(Double.parseDouble(row[4]));
-                    record.setSmoker(Double.parseDouble(row[5]));
-                    record.setStroke(Double.parseDouble(row[6]));
-                    record.setHeartDiseaseOrAttack(Double.parseDouble(row[7]));
-                    record.setPhysActivity(Double.parseDouble(row[8]));
-                    record.setFruits(Double.parseDouble(row[9]));
-                    record.setVeggies(Double.parseDouble(row[10]));
-                    record.setHvyAlcoholConsump(Double.parseDouble(row[11]));
-                    record.setAnyHealthcare(Double.parseDouble(row[12]));
-                    record.setNoDocbcCost(Double.parseDouble(row[13]));
-                    record.setGenHlth(Double.parseDouble(row[14]));
-                    record.setMentHlth(Double.parseDouble(row[15]));
-                    record.setPhysHlth(Double.parseDouble(row[16]));
-                    record.setDiffWalk(Double.parseDouble(row[17]));
-                    record.setSex(Double.parseDouble(row[18]));
-                    record.setAge(Double.parseDouble(row[19]));
-                    record.setEducation(Double.parseDouble(row[20]));
-                    record.setIncome(Double.parseDouble(row[21]));
-                } catch (NumberFormatException e) {
-                    // skip bad row
-                    continue;
-                }
-                dataset.add(record);
+            if (data.isEmpty()) {
+                System.err.println("CSV file is empty.");
+                return false;
             }
 
-            // Now we have a dataset, let's split into training and testing
+            // The first row is the header
+            String[] header = data.get(0);
+            if (header.length < 2) {
+                System.err.println("Not enough columns in the dataset. Need at least one label and one feature.");
+                return false;
+            }
+
+            labelName = header[0];
+            featureNames = Arrays.copyOfRange(header, 1, header.length);
+
+            dataset.clear();
+            // Parse each subsequent row
+            for (int i = 1; i < data.size(); i++) {
+                String[] row = data.get(i);
+                if (row.length != header.length) {
+                    // Skip rows with incorrect length
+                    continue;
+                }
+
+                // First column: label
+                double label;
+                try {
+                    label = Double.parseDouble(row[0]);
+                } catch (NumberFormatException e) {
+                    // Skip if label not numeric
+                    continue;
+                }
+
+                // The rest are features
+                GenericRecord record = new GenericRecord();
+                record.setLabel(label);
+
+                boolean validRow = true;
+                for (int j = 1; j < row.length; j++) {
+                    double val;
+                    try {
+                        val = Double.parseDouble(row[j]);
+                    } catch (NumberFormatException ex) {
+                        // Non-numeric feature: skip this row
+                        validRow = false;
+                        break;
+                    }
+                    record.setFeature(header[j], val);
+                }
+
+                if (validRow) {
+                    dataset.add(record);
+                }
+            }
+
+            if (dataset.isEmpty()) {
+                System.err.println("No valid rows found in the dataset.");
+                return false;
+            }
+
+            // Shuffle and split data
             Collections.shuffle(dataset, new Random(42));
-            int trainSize = (int)(dataset.size() * 0.8);
-            List<DiabetesRecord> trainSet = dataset.subList(0, trainSize);
-            List<DiabetesRecord> testSet = dataset.subList(trainSize, dataset.size());
+            int trainSize = (int) (dataset.size() * 0.8);
+            List<GenericRecord> trainSet = dataset.subList(0, trainSize);
+            List<GenericRecord> testSet = dataset.subList(trainSize, dataset.size());
 
             // Build the random forest
             buildForest(trainSet);
@@ -101,29 +115,28 @@ public class RandomForest {
             System.out.println("Random Forest Accuracy: " + accuracy);
 
             return true;
+
         } catch (IOException | CsvException e) {
             e.printStackTrace();
             return false;
         }
     }
-
-    private void buildForest(List<DiabetesRecord> trainSet) {
-        // For simplicity, use all features except the target "diabetesBinary"
-        String[] features = new String[FIELD_NAMES.length - 1];
-        System.arraycopy(FIELD_NAMES, 1, features, 0, FIELD_NAMES.length - 1);
-
+    public String[] getFeatureNames() {
+        return featureNames;
+    }
+    private void buildForest(List<GenericRecord> trainSet) {
+        // In a general scenario, we already have featureNames from the header.
+        // We'll use them directly.
         for (int i = 0; i < numTrees; i++) {
-            // Bootstrap sample for each tree (in a real implementation)
-            List<DiabetesRecord> bootstrapSample = bootstrapSample(trainSet);
+            List<GenericRecord> bootstrapSample = bootstrapSample(trainSet);
             DecisionTree tree = new DecisionTree();
-            tree.train(bootstrapSample, features);
+            tree.train(bootstrapSample, featureNames);
             forest.add(tree);
         }
     }
 
-    private List<DiabetesRecord> bootstrapSample(List<DiabetesRecord> original) {
-        // Simple bootstrap: same size, random sampling with replacement
-        List<DiabetesRecord> sample = new ArrayList<>();
+    private List<GenericRecord> bootstrapSample(List<GenericRecord> original) {
+        List<GenericRecord> sample = new ArrayList<>();
         Random rand = new Random();
         for (int i = 0; i < original.size(); i++) {
             sample.add(original.get(rand.nextInt(original.size())));
@@ -131,26 +144,25 @@ public class RandomForest {
         return sample;
     }
 
-    private double testForest(List<DiabetesRecord> testSet) {
+    private double testForest(List<GenericRecord> testSet) {
         int correct = 0;
-        for (DiabetesRecord r : testSet) {
+        for (GenericRecord r : testSet) {
             double prediction = predict(r);
-            double actual = r.getDiabetesBinary();
-            // Rounding prediction for a binary outcome (0 or 1)
+            double actual = r.getLabel();
+            // Round prediction for a binary outcome (0 or 1)
             double predClass = (prediction >= 0.5) ? 1.0 : 0.0;
             if (predClass == actual) {
                 correct++;
             }
         }
-        return (double) correct / testSet.size();
+        return testSet.isEmpty() ? 0.0 : (double) correct / testSet.size();
     }
 
-    public double predict(DiabetesRecord record) {
+    public double predict(GenericRecord record) {
         double sum = 0.0;
         for (DecisionTree tree : forest) {
             sum += tree.predict(record);
         }
-        double avg = sum / forest.size();
-        return avg;
+        return sum / forest.size();
     }
 }

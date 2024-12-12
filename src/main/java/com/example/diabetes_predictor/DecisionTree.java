@@ -7,17 +7,14 @@ public class DecisionTree {
     private Node root;
     private Random rand = new Random();
 
-    // This is a highly simplified decision tree constructor
-    public void train(List<DiabetesRecord> records, String[] attributes) {
-        // For simplicity, we just pick a random attribute and a random threshold
-        // In a real tree, you'd find the attribute/threshold that yields the best split
+    public void train(List<GenericRecord> records, String[] attributes) {
         if (records.isEmpty()) {
             return;
         }
         root = buildTree(records, attributes);
     }
 
-    private Node buildTree(List<DiabetesRecord> records, String[] attributes) {
+    private Node buildTree(List<GenericRecord> records, String[] attributes) {
         // Stopping condition: if too small or pure, return a leaf
         if (records.size() < 5 || isPure(records)) {
             Node leaf = new Node();
@@ -29,9 +26,17 @@ public class DecisionTree {
         String attribute = attributes[rand.nextInt(attributes.length)];
         double threshold = findThreshold(records, attribute);
 
-        // Split records
-        List<DiabetesRecord> leftSet = records.stream().filter(r -> (double) r.getFieldValue(attribute) <= threshold).toList();
-        List<DiabetesRecord> rightSet = records.stream().filter(r -> (double) r.getFieldValue(attribute) > threshold).toList();
+        List<GenericRecord> leftSet = records.stream()
+                .filter(r -> {
+                    Double val = r.getFieldValue(attribute);
+                    return val != null && val <= threshold;
+                }).toList();
+
+        List<GenericRecord> rightSet = records.stream()
+                .filter(r -> {
+                    Double val = r.getFieldValue(attribute);
+                    return val != null && val > threshold;
+                }).toList();
 
         // If we end up with empty splits, just return a leaf
         if (leftSet.isEmpty() || rightSet.isEmpty()) {
@@ -49,36 +54,59 @@ public class DecisionTree {
         return node;
     }
 
-    private boolean isPure(List<DiabetesRecord> records) {
-        double first = records.get(0).getDiabetesBinary();
-        for (DiabetesRecord r : records) {
-            if (r.getDiabetesBinary() != first) return false;
+    private boolean isPure(List<GenericRecord> records) {
+        double first = records.get(0).getLabel();
+        for (GenericRecord r : records) {
+            if (r.getLabel() != first) return false;
         }
         return true;
     }
 
-    private double averageLabel(List<DiabetesRecord> records) {
-        return records.stream().mapToDouble(DiabetesRecord::getDiabetesBinary).average().orElse(0.0);
+    private double averageLabel(List<GenericRecord> records) {
+        return records.stream().mapToDouble(GenericRecord::getLabel).average().orElse(0.0);
     }
 
-    private double findThreshold(List<DiabetesRecord> records, String attribute) {
-        // Random threshold based on min-max of this attribute
+    private double findThreshold(List<GenericRecord> records, String attribute) {
         double min = Double.MAX_VALUE;
         double max = -Double.MAX_VALUE;
-        for (DiabetesRecord r : records) {
-            double val = (double) r.getFieldValue(attribute);
-            if (val < min) min = val;
-            if (val > max) max = val;
+        for (GenericRecord r : records) {
+            Double val = r.getFieldValue(attribute);
+            if (val != null) {
+                if (val < min) min = val;
+                if (val > max) max = val;
+            }
+        }
+        if (min == Double.MAX_VALUE || max == -Double.MAX_VALUE) {
+            // If we cannot find a valid min/max, default to 0.5
+            return 0.5;
         }
         return min + (max - min) * rand.nextDouble();
     }
 
-    public double predict(DiabetesRecord record) {
+    public double predict(GenericRecord record) {
         Node current = root;
-        while (!current.isLeaf()) {
-            double val = (double) record.getFieldValue(current.attribute);
-            current = (val <= current.threshold) ? current.left : current.right;
+        while (current != null && !current.isLeaf()) {
+            Double val = record.getFieldValue(current.attribute);
+            if (val == null) {
+                // If missing, predict average or go one branch arbitrarily
+                // We'll just go left arbitrarily here.
+                current = current.left;
+            } else {
+                current = (val <= current.threshold) ? current.left : current.right;
+            }
         }
-        return current.prediction;
+        return (current != null) ? current.prediction : 0.0;
+    }
+
+    private static class Node {
+        String attribute;
+        double threshold;
+        Node left;
+        Node right;
+        double prediction = Double.NaN;
+
+        boolean isLeaf() {
+            return Double.isFinite(prediction);
+        }
     }
 }

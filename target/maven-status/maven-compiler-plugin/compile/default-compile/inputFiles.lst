@@ -1,7 +1,7 @@
 /Users/luckyhappyfish/Downloads/diabetes-predictor/src/main/java/com/example/diabetes_predictor/DecisionTree.java
 /Users/luckyhappyfish/Downloads/diabetes-predictor/src/main/java/com/example/diabetes_predictor/DiabetesPredictorApplication.java
 /Users/luckyhappyfish/Downloads/diabetes-predictor/src/main/java/com/example/diabetes_predictor/DiabetesPredictorFX.java
-/Users/luckyhappyfish/Downloads/diabetes-predictor/src/main/java/com/example/diabetes_predictor/DiabetesRecord.java
+/Users/luckyhappyfish/Downloads/diabetes-predictor/src/main/java/com/example/diabetes_predictor/GenericRecord.java
 /Users/luckyhappyfish/Downloads/diabetes-predictor/src/main/java/com/example/diabetes_predictor/HelloController.java
 /Users/luckyhappyfish/Downloads/diabetes-predictor/src/main/java/com/example/diabetes_predictor/Node.java
 /Users/luckyhappyfish/Downloads/diabetes-predictor/src/main/java/com/example/diabetes_predictor/RandomForest.java

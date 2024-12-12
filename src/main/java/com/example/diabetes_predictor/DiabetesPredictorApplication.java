@@ -5,14 +5,15 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import javafx.application.Application;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class DiabetesPredictorApplication {
 	@Autowired
 	private RandomForest practice;
 
-	public static void main(String[] args) {
-		SpringApplication.run(DiabetesPredictorApplication.class, args);
+	public static void main(String[] args)    {    Application.launch(DiabetesPredictorFX.class, args);
 	}
 
 	@Bean
