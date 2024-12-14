@@ -5,6 +5,7 @@ com/example/diabetes_predictor/GenericRecord.class
 com/example/diabetes_predictor/DiabetesPredictorApplication.class
 com/example/diabetes_predictor/DiabetesPredictorFX.class
 com/example/diabetes_predictor/Node.class
+com/example/diabetes_predictor/DiabetesPredictorFX$3.class
 com/example/diabetes_predictor/DiabetesPredictorFX$1.class
 com/example/springboot/HelloController.class
 com/example/diabetes_predictor/DecisionTree.class
