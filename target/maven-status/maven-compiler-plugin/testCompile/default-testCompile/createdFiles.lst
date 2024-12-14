@@ -1,1 +1,4 @@
-com/example/diabetes_predictor/DiabetesPredictorApplicationTests.class
+com/example/diabetes_predictor/GenericRecordTest.class
+com/example/diabetes_predictor/RandomForestTest.class
+com/example/diabetes_predictor/DiabetesPredictorFXLogicTest.class
+com/example/diabetes_predictor/DecisionTreeTest.class

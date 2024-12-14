@@ -1,1 +1,4 @@
-/Users/luckyhappyfish/Downloads/diabetes-predictor/src/test/java/com/example/diabetes_predictor/DiabetesPredictorApplicationTests.java
+/Users/luckyhappyfish/Downloads/diabetes-predictor/src/test/java/com/example/diabetes_predictor/DecisionTreeTest.java
+/Users/luckyhappyfish/Downloads/diabetes-predictor/src/test/java/com/example/diabetes_predictor/DiabetesPredictorFXLogicTest.java
+/Users/luckyhappyfish/Downloads/diabetes-predictor/src/test/java/com/example/diabetes_predictor/GenericRecordTest.java
+/Users/luckyhappyfish/Downloads/diabetes-predictor/src/test/java/com/example/diabetes_predictor/RandomForestTest.java

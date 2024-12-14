@@ -7,6 +7,17 @@ public class GenericRecord {
     private double label;
     private Map<String, Double> features = new HashMap<>();
 
+    // Default constructor
+    public GenericRecord() {}
+
+    // Convenience constructor
+    public GenericRecord(double label, Map<String, Double> features) {
+        this.label = label;
+        if (features != null) {
+            this.features.putAll(features);
+        }
+    }
+
     public double getLabel() {
         return label;
     }

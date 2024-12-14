@@ -19,6 +19,7 @@ public class RandomForest {
     private int numTrees = 10; // number of trees in the forest
     private String labelName;
     private String[] featureNames;
+    private double lastAccuracy = 0.0;
 
     /**
      * Original practice method. Not strictly needed if you rely on trainFromCSVString.
@@ -77,6 +78,12 @@ public class RandomForest {
             return false;
         }
     }
+
+
+    public double getLastAccuracy() {
+        return lastAccuracy;
+    }
+
 
     /**
      * Train the RandomForest from a given CSV string and target variable name.
@@ -137,6 +144,7 @@ public class RandomForest {
 
             buildForest(trainSet);
             double accuracy = testForest(testSet);
+            this.lastAccuracy = accuracy;
             System.out.println("Random Forest Accuracy: " + accuracy);
 
             return true;
@@ -144,6 +152,7 @@ public class RandomForest {
             e.printStackTrace();
             return false;
         }
+
     }
 
     /**

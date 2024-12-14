@@ -652,7 +652,9 @@ public class DiabetesPredictorFX extends Application {
         line.setStartY(top);
         line.setEndY(bottom);
     }
-
+    public void setRandomForest(RandomForest randomForest) {
+        this.randomForest = randomForest;
+    }
     private void handleFormSubmit() {
         ProgressIndicator loadingIndicator = new ProgressIndicator();
         loadingIndicator.setPrefSize(100, 100);
@@ -717,7 +719,7 @@ public class DiabetesPredictorFX extends Application {
         applyFadeTransition(resultBox, 0, 1, 1000).play();
     }
 
-    private GenericRecord buildGenericRecordFromAnswers(List<String> answers) {
+    protected GenericRecord buildGenericRecordFromAnswers(List<String> answers) {
         GenericRecord record = new GenericRecord();
         String[] fn = randomForest.getFeatureNames();
 

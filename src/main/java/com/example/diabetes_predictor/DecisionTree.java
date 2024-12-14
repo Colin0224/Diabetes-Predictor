@@ -88,8 +88,6 @@ public class DecisionTree {
         while (current != null && !current.isLeaf()) {
             Double val = record.getFieldValue(current.attribute);
             if (val == null) {
-                // If missing, predict average or go one branch arbitrarily
-                // We'll just go left arbitrarily here.
                 current = current.left;
             } else {
                 current = (val <= current.threshold) ? current.left : current.right;
