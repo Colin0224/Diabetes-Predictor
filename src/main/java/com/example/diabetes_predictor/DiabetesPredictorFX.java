@@ -1,5 +1,7 @@
 package com.example.diabetes_predictor;
 
+import com.theokanning.openai.completion.chat.*;
+import com.theokanning.openai.service.OpenAiService;
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.concurrent.Task;
@@ -13,11 +15,16 @@ import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.XYChart;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -188,12 +195,8 @@ public class DiabetesPredictorFX extends Application {
 
         QUESTIONS.clear();
         QUESTION_IMAGES.clear();
-        for (String q : defaultQuestions) {
-            QUESTIONS.add(q);
-        }
-        for (String img : defaultImages) {
-            QUESTION_IMAGES.add(img);
-        }
+        Collections.addAll(QUESTIONS, defaultQuestions);
+        Collections.addAll(QUESTION_IMAGES, defaultImages);
     }
 
     private void loadCSVFromFileChooserForQuestions() {
@@ -208,7 +211,7 @@ public class DiabetesPredictorFX extends Application {
             boolean loaded = loadCustomQuestionsFromCSV(selectedFile);
             if (loaded) {
                 isCustomDataset = false;
-                buildQuestionnaireScene(); // Build the form scene for custom dataset
+                buildQuestionnaireScene();
             } else {
                 showAlert("Error", "Failed to load CSV. Please ensure it is in the correct format.");
             }
@@ -308,65 +311,6 @@ public class DiabetesPredictorFX extends Application {
         currentQuestionIndex = 0;
         answers.clear();
         showQuestion(0, true);
-    }
-
-    private void buildFormScene() {
-        root = new BorderPane();
-        root.setPadding(new Insets(20));
-
-        Label title = new Label("Diabetes Predictor - Custom Dataset");
-        title.setStyle("-fx-font-size: 32px; -fx-text-fill: #333333; -fx-font-weight: bold;");
-        HBox titleBox = new HBox(title);
-        titleBox.setAlignment(Pos.CENTER);
-        titleBox.setPadding(new Insets(10, 0, 20, 0));
-        root.setTop(titleBox);
-
-        questionImageView = new ImageView();
-        questionImageView.setPreserveRatio(true);
-        questionImageView.setFitWidth(200);
-        questionImageView.setSmooth(true);
-        questionImageView.setCache(true);
-
-        InputStream placeholderStream = getClass().getResourceAsStream(PLACEHOLDER_IMAGE_PATH);
-        if (placeholderStream != null) {
-            questionImageView.setImage(new Image(placeholderStream));
-        }
-
-        VBox form = new VBox(10);
-        form.setAlignment(Pos.CENTER_LEFT);
-        form.setPadding(new Insets(20));
-        customTextFields.clear();
-
-        featureNames = randomForest.getFeatureNames();
-
-        for (int i = 0; i < QUESTIONS.size(); i++) {
-            HBox row = new HBox(10);
-            Label qLabel = new Label((i + 1) + ") " + QUESTIONS.get(i));
-            TextField field = new TextField();
-            customTextFields.add(field);
-            row.setAlignment(Pos.CENTER_LEFT);
-            row.getChildren().addAll(qLabel, field);
-            form.getChildren().add(row);
-        }
-
-        Button submitButton = new Button("Submit");
-        submitButton.setStyle("-fx-background-color: #4a90e2; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;");
-        submitButton.setOnAction(e -> handleFormSubmit());
-        form.getChildren().add(submitButton);
-
-        HBox mainContent = new HBox(20, questionImageView, form);
-        mainContent.setAlignment(Pos.CENTER);
-        mainContent.setPadding(new Insets(20));
-
-        centerPane = new StackPane(mainContent);
-        centerPane.setAlignment(Pos.CENTER);
-        root.setCenter(centerPane);
-
-        buildResultBox();
-
-        Scene scene = new Scene(root, 900, 600);
-        primaryStage.setScene(scene);
-        primaryStage.show();
     }
 
     private void buildResultBox() {
@@ -469,48 +413,63 @@ public class DiabetesPredictorFX extends Application {
         };
         new Thread(predictionTask).start();
     }
+
     private String callOpenAIAPI(String prompt) {
-        OpenAiService service = new OpenAiService("YOUR_API_KEY");
-        CompletionRequest completionRequest = CompletionRequest.builder()
-                .prompt(prompt)
+        // Retrieve OpenAI API key from the environment variable
+        String apiKey = System.getenv("OPENAI_API_KEY");
+        if (apiKey == null || apiKey.isEmpty()) {
+            throw new IllegalStateException("Environment variable OPENAI_API_KEY is not set or is empty.");
+        }
+
+        // Initialize the OpenAI service with the API key
+        OpenAiService service = new OpenAiService(apiKey);
+
+        // Create the list of chat messages
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), "You are a helpful medical assistant."));
+        messages.add(new ChatMessage(ChatMessageRole.USER.value(), prompt));
+
+        // Create the chat completion request
+        ChatCompletionRequest request = ChatCompletionRequest.builder()
                 .model("gpt-3.5-turbo")
+                .messages(messages)
                 .maxTokens(1024)
                 .temperature(0.7)
                 .build();
-        CompletionResult result = service.createCompletion(completionRequest);
-        return result.getChoices().get(0).getText();
+
+        try {
+            // Call the OpenAI API
+            ChatCompletionResult result = service.createChatCompletion(request);
+
+            // Extract and return the response content
+            if (result != null && !result.getChoices().isEmpty()) {
+                ChatMessage responseMessage = result.getChoices().get(0).getMessage();
+                if (responseMessage != null && responseMessage.getContent() != null) {
+                    return responseMessage.getContent().trim();
+                }
+            }
+            return "No meaningful response from OpenAI.";
+        } catch (Exception e) {
+            // Handle API errors gracefully
+            e.printStackTrace();
+            return "Error communicating with OpenAI: " + e.getMessage();
+        }
     }
 
-    /**
-     * Generate a prompt for OpenAI using the user's answers and the model prediction.
-     * Incorporates switch statements and conditions to tailor the prompt.
-     */
+
     private String generateOpenAIPrompt(List<String> userAnswers, double prediction) {
         StringBuilder promptBuilder = new StringBuilder();
 
         promptBuilder.append("You are a medical assistant specializing in Diabetes. ")
                 .append("The user answered a series of questions related to health and lifestyle. ")
-                .append("They were asked about various factors like blood pressure, cholesterol, BMI, smoking habits, physical activity, etc. ")
                 .append("Based on their answers, a model predicted their likelihood of having diabetes.\n\n");
 
-        // Add model's prediction result to the context
         if (prediction >= 0.5) {
             promptBuilder.append("The Random Forest model suggests the user is LIKELY diabetic.\n\n");
         } else {
             promptBuilder.append("The Random Forest model suggests the user is NOT likely diabetic.\n\n");
         }
 
-        // Now incorporate user answers into the prompt.
-        // We'll use index-based logic to add conditions.
-        // For demonstration, let's say:
-        // Question 0 = High Blood Pressure
-        // Question 7 = Regular Physical Activity
-        // Question 10 = Heavy Alcohol Consumption
-        // Question 13 = General Health
-        // Question 17 = Gender (just as examples)
-
-        // Ensure we have enough answers
-        // (In production code, you should check the size carefully)
         String highBloodPressure = (userAnswers.size() > 0) ? userAnswers.get(0) : "I Don't Know";
         String physicalActivity = (userAnswers.size() > 7) ? userAnswers.get(7) : "I Don't Know";
         String alcohol = (userAnswers.size() > 10) ? userAnswers.get(10) : "I Don't Know";
@@ -525,90 +484,173 @@ public class DiabetesPredictorFX extends Application {
                 .append("Gender: ").append(gender).append("\n\n");
 
         promptBuilder.append("Given these answers, provide a very detailed set of recommendations to either prevent or manage diabetes. ")
-                .append("Tailor advice based on their specific answers. For example, if they have high blood pressure or no physical activity, address that in your advice. ")
-                .append("If their general health is bad, provide more urgent lifestyle changes. ")
-                .append("If they are already likely diabetic, recommend consulting a healthcare professional and provide dietary, exercise, and medication guidance. ")
-                .append("If they are not likely diabetic, focus on preventive measures.\n\n");
+                .append("Tailor advice based on their specific answers.\n\n");
 
-        // Use switch/if statements to further tailor the prompt:
-        // For high blood pressure
+        // Example conditions based on some answers
         switch (highBloodPressure) {
             case "Yes":
-                promptBuilder.append("Note: The user indicated high blood pressure, please emphasize on managing blood pressure through diet, exercise, and medication.\n");
+                promptBuilder.append("Note: The user has high blood pressure, advise on managing it.\n");
                 break;
             case "No":
-                promptBuilder.append("Note: The user does not have high blood pressure, still, maintaining normal blood pressure levels is important.\n");
+                promptBuilder.append("Note: No high blood pressure reported, but still maintain healthy BP.\n");
                 break;
             default:
-                promptBuilder.append("Note: The user is uncertain about high blood pressure, suggest regular check-ups.\n");
+                promptBuilder.append("Note: Uncertain about blood pressure, advise check-ups.\n");
                 break;
         }
 
-        // For physical activity:
         switch (physicalActivity) {
             case "Yes":
-                promptBuilder.append("They engage in regular physical activity: encourage continuing this habit.\n");
+                promptBuilder.append("They exercise regularly: encourage continuing.\n");
                 break;
             case "No":
-                promptBuilder.append("They do not engage in physical activity: emphasize the importance of starting a safe exercise routine.\n");
+                promptBuilder.append("They don't exercise: encourage starting a routine.\n");
                 break;
             default:
-                promptBuilder.append("Uncertain about physical activity: recommend at least 30 mins of moderate activity daily.\n");
+                promptBuilder.append("Uncertain about exercise: recommend at least 30 min/day.\n");
                 break;
         }
 
-        // For alcohol:
         switch (alcohol) {
             case "Yes":
-                promptBuilder.append("They have heavy alcohol consumption: strongly recommend reducing alcohol intake.\n");
+                promptBuilder.append("Heavy alcohol: recommend reduction.\n");
                 break;
             case "No":
-                promptBuilder.append("They do not have heavy alcohol consumption: maintaining low alcohol intake is good.\n");
+                promptBuilder.append("No heavy alcohol: maintain low intake.\n");
                 break;
             default:
-                promptBuilder.append("Uncertain about alcohol consumption: advise moderation.\n");
+                promptBuilder.append("Uncertain alcohol use: advise moderation.\n");
                 break;
         }
 
-        // For general health:
         switch (generalHealth) {
             case "Yes":
-                promptBuilder.append("General health described as good: encourage maintaining current healthy habits.\n");
+                promptBuilder.append("Good general health: maintain healthy habits.\n");
                 break;
             case "No":
-                promptBuilder.append("General health is bad: provide urgent interventions for diet, exercise, mental health support.\n");
+                promptBuilder.append("Poor general health: urgent lifestyle changes.\n");
                 break;
             default:
-                promptBuilder.append("General health is unclear: recommend comprehensive health check-ups.\n");
+                promptBuilder.append("Uncertain health: comprehensive check-ups.\n");
                 break;
         }
 
-        // Add a final instruction for OpenAI:
-        promptBuilder.append("\nNow please provide a detailed set of recommendations (about nutrition, exercise, medical check-ups, mental health, etc.) to help the user manage or prevent diabetes considering all these factors.\n")
-                .append("The recommendations should be practical, achievable, and supportive.\n");
+        promptBuilder.append("\nNow provide detailed, practical recommendations (nutrition, exercise, medical check-ups, mental health support, etc.) tailored to these conditions.\n");
 
         return promptBuilder.toString();
     }
-
     private void displayResultsForQuestionnaire() {
         GenericRecord record = buildGenericRecordFromAnswers(answers);
         double prediction = randomForest.predict(record);
         double predClass = (prediction >= 0.5) ? 1.0 : 0.0;
+
         String predMessage = (predClass == 1.0)
                 ? "According to the model, you are likely diabetic."
                 : "According to the model, you are likely not diabetic.";
         resultLabel.setText(predMessage);
 
-        // Integrate OpenAI call here:
         String prompt = generateOpenAIPrompt(answers, prediction);
         String openAIResponse = callOpenAIAPI(prompt);
-
         recommendationArea.setText(openAIResponse);
+
+        // Parameters for the bell curve
+        double mean = 0.5;
+        double stdDev = 0.15;
+        int numPoints = 200; // The resolution of the curve
+
+        // Create the axes for the bell curve chart
+        NumberAxis xAxis = new NumberAxis(0, 1, 0.1);
+        NumberAxis yAxis = new NumberAxis();
+        xAxis.setLabel("Risk");
+        yAxis.setLabel("Density");
+
+        // Create the chart
+        LineChart<Number, Number> bellChart = new LineChart<>(xAxis, yAxis);
+        bellChart.setTitle("Risk Distribution");
+        bellChart.setCreateSymbols(false);
+
+        // Generate the bell curve data
+        XYChart.Series<Number, Number> series = new XYChart.Series<>();
+        series.setName("Bell Curve");
+        for (int i = 0; i <= numPoints; i++) {
+            double xVal = i / (double) numPoints;
+            double yVal = gaussian(xVal, mean, stdDev);
+            series.getData().add(new XYChart.Data<>(xVal, yVal));
+        }
+        bellChart.getData().add(series);
+
+        // Add a point for the user's prediction on the curve
+        XYChart.Series<Number, Number> userPointSeries = new XYChart.Series<>();
+        userPointSeries.setName("Your Risk");
+        double userYVal = gaussian(prediction, mean, stdDev);
+        userPointSeries.getData().add(new XYChart.Data<>(prediction, userYVal));
+        bellChart.getData().add(userPointSeries);
+
+        // Add a vertical line marker at the user's prediction
+        Line userLine = new Line();
+        userLine.setStroke(Color.RED);
+        userLine.setStrokeWidth(2);
+
+        // Update user line position whenever chart is laid out or resized
+        bellChart.widthProperty().addListener((obs, oldW, newW) -> updateUserLinePosition(bellChart, userLine, prediction));
+        bellChart.heightProperty().addListener((obs, oldH, newH) -> updateUserLinePosition(bellChart, userLine, prediction));
+        bellChart.layout();
+        updateUserLinePosition(bellChart, userLine, prediction);
+
+        // Create a StackPane to overlay the line on the chart
+        StackPane chartPane = new StackPane(bellChart, userLine);
+        chartPane.setPrefHeight(300);
+        chartPane.setPrefWidth(500);
+
+        // Create an HBox to display recommendations and the chart side-by-side
+        HBox visualizationBox = new HBox(20, recommendationArea, chartPane);
+        visualizationBox.setAlignment(Pos.CENTER);
+
+        // Categorize risk based on prediction
+        String riskCategory;
+        if (prediction < 0.2) {
+            riskCategory = "Very Low Risk";
+        } else if (prediction < 0.4) {
+            riskCategory = "Low Risk";
+        } else if (prediction < 0.6) {
+            riskCategory = "Moderate Risk";
+        } else if (prediction < 0.8) {
+            riskCategory = "High Risk";
+        } else {
+            riskCategory = "Very High Risk";
+        }
+
+        Label riskCategoryLabel = new Label("Your position on the curve: " + riskCategory);
+        riskCategoryLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #444444;");
+
+        // Clear the resultBox and add the result label, visualization, and risk category
+        resultBox.getChildren().clear();
+        resultBox.getChildren().addAll(resultLabel, visualizationBox, riskCategoryLabel);
 
         centerPane.getChildren().clear();
         centerPane.getChildren().add(resultBox);
 
         applyFadeTransition(resultBox, 0, 1, 1000).play();
+    }
+
+    private double gaussian(double x, double m, double sd) {
+        return (1.0 / (sd * Math.sqrt(2 * Math.PI))) *
+                Math.exp(-0.5 * Math.pow((x - m) / sd, 2));
+    }
+
+    private void updateUserLinePosition(LineChart<Number, Number> chart, Line line, double prediction) {
+        NumberAxis xAxis = (NumberAxis) chart.getXAxis();
+        NumberAxis yAxis = (NumberAxis) chart.getYAxis();
+
+        double xPos = xAxis.getDisplayPosition(prediction);
+
+        double top = yAxis.getDisplayPosition(yAxis.getUpperBound());
+        double bottom = yAxis.getDisplayPosition(yAxis.getLowerBound());
+
+        line.setStartX(xPos);
+        line.setEndX(xPos);
+        line.setStartY(top);
+        line.setEndY(bottom);
     }
 
     private void handleFormSubmit() {
@@ -660,9 +702,6 @@ public class DiabetesPredictorFX extends Application {
                 : "According to the model, you are likely not diabetic.";
         resultLabel.setText(predMessage);
 
-        // For custom dataset mode, we don't have the same predefined questions/answers.
-        // If you want, you can still pass some mock answers or adapt the prompt accordingly.
-        // For now, we can just build a generic prompt.
         List<String> mockAnswers = IntStream.range(0, QUESTIONS.size())
                 .mapToObj(i -> "I Don't Know")
                 .collect(Collectors.toList());
@@ -677,6 +716,7 @@ public class DiabetesPredictorFX extends Application {
 
         applyFadeTransition(resultBox, 0, 1, 1000).play();
     }
+
     private GenericRecord buildGenericRecordFromAnswers(List<String> answers) {
         GenericRecord record = new GenericRecord();
         String[] fn = randomForest.getFeatureNames();
