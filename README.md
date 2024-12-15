@@ -87,5 +87,5 @@ Contributions are welcome! Feel free to open issues or submit pull requests on t
 ---
 
 ## Contact
-For questions or support, contact Colin at [your-email@example.com].
+For questions or support, contact Colin at [colinwong0224@gmail.com]
 
