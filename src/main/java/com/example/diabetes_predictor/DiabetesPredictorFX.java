@@ -416,7 +416,7 @@ public class DiabetesPredictorFX extends Application {
 
     private String callOpenAIAPI(String prompt) {
         // Retrieve OpenAI API key from the environment variable
-        String apiKey = System.getenv("OPENAI_API_KEY");
+        String apiKey = "APIKEY";
         if (apiKey == null || apiKey.isEmpty()) {
             throw new IllegalStateException("Environment variable OPENAI_API_KEY is not set or is empty.");
         }

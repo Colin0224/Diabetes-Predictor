@@ -13,7 +13,7 @@ import java.util.*;
 
 @Service
 public class RandomForest {
-    private static final String DEFAULT_FILE_PATH = "Data/s.csv";
+    private static final String DEFAULT_FILE_PATH = "Data/Diabetes_Dataset.csv";
     private List<GenericRecord> dataset = new ArrayList<>();
     private List<DecisionTree> forest = new ArrayList<>();
     private int numTrees = 10; // number of trees in the forest
